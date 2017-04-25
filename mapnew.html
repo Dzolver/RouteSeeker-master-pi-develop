@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Directions service</title>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #floating-panel {
+        position: absolute;
+        top: 10px;
+        left: 25%;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+        text-align: center;
+        font-family: 'Roboto','sans-serif';
+        line-height: 30px;
+        padding-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="floating-panel" style="visibility:hidden">
+		<b>Start: </b>
+		<input type="text" name="start" id="start" value="start_repl" />
+		<b>End: </b>
+		<input type="text" name="end" id="end" value="end_repl"  />
+		<b>Center: </b>
+		<input type="text" name="centre" id="centre" value="centre_repl" />
+    </div>
+    <div id="map"></div>
+    <script>
+	  var directionsDisplay;
+	  var directionsService;
+	  var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 16,
+        });;
+	  var locM;
+      function initMap() {
+        directionsService = new google.maps.DirectionsService;
+        directionsDisplay = new google.maps.DirectionsRenderer;
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 16,
+        });
+		locM = new google.maps.Marker({position: {lat: null, lng: null}, map: map});
+        directionsDisplay.setMap(map);
+		directionsDisplay.setOptions({preserveViewport : true});
+
+        var onChangeHandler = function() {
+          calculateAndDisplayRoute(directionsService, directionsDisplay);
+		  reCenter(map, locM);
+        };
+		
+		onChangeHandler();
+
+		var reCenterHandler = function() {
+			reCenter(map, locM);
+        };
+
+        document.getElementById('start').addEventListener('change', onChangeHandler);
+        document.getElementById('end').addEventListener('change', onChangeHandler);
+		document.getElementById('centre').addEventListener('change', reCenterHandler);
+		/*Uses the setInterval() function to call the reCenter() method
+        * every second.*/
+		setInterval(reCenterHandler,5000);
+
+      }
+	  
+	  function reCenter(map, locM) {
+		var str = document.getElementById("centre").value;
+		var n = str.indexOf(",");
+		var lat = parseFloat(str.substr(0, n));
+		var lng = parseFloat(str.substr(n+2, str.length));
+		map.panTo(new google.maps.LatLng(lat, lng));
+		locM.setPosition({lat: lat, lng: lng});
+		readCoordinatesFile();
+	  }
+	  
+      /*Reads coordinates from text file and sets that as the value for "centre".*/
+      function readCoordinatesFile(){
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function(){
+              document.getElementById("centre").value = this.response;
+			  /*uncomment to start point logging*/
+			  console.log(this.response);
+          };
+          xhttp.open("GET","loc.txt",true);
+          xhttp.send();
+      }
+
+      function calculateAndDisplayRoute(directionsService, directionsDisplay) {
+        directionsService.route({
+          origin: document.getElementById('start').value,
+          destination: document.getElementById('end').value,
+          travelMode: 'DRIVING'
+        }, function(response, status) {
+          if (status === 'OK') {
+            directionsDisplay.setDirections(response);
+          } else {
+            window.alert('Directions request failed due to ' + status);
+          }
+        });
+      }
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDf9LLXsoKKRR9CFCTNA5ar4_-_eo_STPc&callback=initMap">
+    </script>
+  </body>
+</html>
